@@ -1,16 +1,51 @@
-# React + Vite
+# Log Scanner Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is a Java Spring Boot application that allows users to upload log files and provides tools to filter, sort, and search through the logs efficiently.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Upload log files via a user-friendly interface
+- Filter logs by date, level, or custom fields
+- Sort logs by timestamp or other attributes
+- Search logs using keywords or regular expressions
+- RESTful API endpoints for integration
 
-## React Compiler
+## Technologies Used
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Java
+- Spring Boot
+- Maven
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. **Clone the repository:**
+   ```
+   git clone git@github.com:logscanner-org/logscanner.git
+   cd logscanner
+   ```
+
+2. **Build the project:**
+   ```
+   mvn clean install
+   ```
+
+3. **Run the application:**
+   ```
+   mvn spring-boot:run
+   ```
+
+4. **Access the application:**
+   - Open your browser and go to `http://localhost:8080`
+
+## API Endpoints
+
+- `POST /logs/upload` - Upload a log file
+- `GET /logs` - Retrieve, filter, sort, and search logs
+
+## Configuration
+
+- Configure application properties in `src/main/resources/application.properties` as needed.
+
+## License
+
+This project is licensed under the Apache-2.0 license.
