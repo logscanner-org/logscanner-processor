@@ -1,0 +1,113 @@
+spring:
+  application:
+    name: logscanner-processor
+
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+      enabled: true
+
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URL:http://localhost:9200}
+#    username: ${ELASTICSEARCH_USERNAME:elastic}
+#    password: ${ELASTICSEARCH_PASSWORD:elastic}
+    connection-timeout: 5s
+    socket-timeout: 30s
+
+  data:
+    elasticsearch:
+      repositories:
+        enabled: true
+
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 10
+        max-idle: 8
+        min-idle: 2
+        max-wait: -1ms
+
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: UTC
+
+app:
+  file:
+    max-size: 52428800  # 50MB in bytes
+    allowed-types: log,txt,json,csv
+
+  processing:
+    batch-size: 1000  # Number of lines to process in each batch
+    thread-pool:
+      core-size: 4
+      max-size: 10
+      queue-capacity: 100
+    cleanup-temp-files: true
+    retention-days: 30
+
+  elasticsearch:
+    index-prefix: logscanner
+    number-of-shards: 2
+    number-of-replicas: 1
+    refresh-interval: 1s
+    max-result-window: 10000
+
+logging:
+  level:
+    root: INFO
+    com.star.logscanner: INFO
+    org.springframework.web: INFO
+    org.elasticsearch.client: INFO
+    org.springframework.data.elasticsearch: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/logscanner.log
+    max-size: 10MB
+    max-history: 30
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+
+server:
+  port: ${PORT:8080}
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stack-trace: on-param
+  tomcat:
+    max-threads: 200
+    min-spare-threads: 10
+    accept-count: 100
+    max-connections: 10000
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: "*"
+  allow-credentials: true
+  max-age: 3600
