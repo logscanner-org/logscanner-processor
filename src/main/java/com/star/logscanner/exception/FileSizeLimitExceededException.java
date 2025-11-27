@@ -1,5 +1,8 @@
 package com.star.logscanner.exception;
 
+import lombok.Getter;
+
+@Getter
 public class FileSizeLimitExceededException extends FileUploadException {
     private final long maxSize;
     private final long actualSize;
@@ -11,11 +14,4 @@ public class FileSizeLimitExceededException extends FileUploadException {
         this.actualSize = actualSize;
     }
 
-    public long getMaxSize() {
-        return maxSize;
-    }
-
-    public long getActualSize() {
-        return actualSize;
-    }
 }

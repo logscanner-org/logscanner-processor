@@ -32,11 +32,11 @@ public class GlobalExceptionHandler {
                 "FILE_SIZE_LIMIT_EXCEEDED",
                 ex.getMessage(),
                 request.getRequestURI(),
-                HttpStatus.CONTENT_TOO_LARGE.value()
+                HttpStatus.PAYLOAD_TOO_LARGE.value()
         );
 
         return ResponseEntity
-                .status(HttpStatus.CONTENT_TOO_LARGE)
+                .status(HttpStatus.PAYLOAD_TOO_LARGE)
                 .body(ApiResponse.error("File size exceeds the allowed limit", errorResponse));
     }
 
@@ -127,11 +127,11 @@ public class GlobalExceptionHandler {
                 "MAX_UPLOAD_SIZE_EXCEEDED",
                 "File size exceeds the maximum allowed size for upload",
                 request.getRequestURI(),
-                HttpStatus.CONTENT_TOO_LARGE.value()
+                HttpStatus.PAYLOAD_TOO_LARGE.value()
         );
 
         return ResponseEntity
-                .status(HttpStatus.CONTENT_TOO_LARGE)
+                .status(HttpStatus.PAYLOAD_TOO_LARGE)
                 .body(ApiResponse.error("File too large", errorResponse));
     }
 

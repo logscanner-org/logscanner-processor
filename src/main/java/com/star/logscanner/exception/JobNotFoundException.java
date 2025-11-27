@@ -1,5 +1,8 @@
 package com.star.logscanner.exception;
 
+import lombok.Getter;
+
+@Getter
 public class JobNotFoundException extends RuntimeException {
     private final String jobId;
 
@@ -8,7 +11,4 @@ public class JobNotFoundException extends RuntimeException {
         this.jobId = jobId;
     }
 
-    public String getJobId() {
-        return jobId;
-    }
 }

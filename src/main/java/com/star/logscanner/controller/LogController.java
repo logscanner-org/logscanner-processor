@@ -5,7 +5,11 @@ import com.star.logscanner.dto.JobStatusEnum;
 import com.star.logscanner.dto.UploadResponse;
 import com.star.logscanner.entity.JobResult;
 import com.star.logscanner.entity.JobStatus;
-import com.star.logscanner.exception.*;
+import com.star.logscanner.exception.FileSizeLimitExceededException;
+import com.star.logscanner.exception.FileUploadException;
+import com.star.logscanner.exception.InvalidFileTypeException;
+import com.star.logscanner.exception.JobNotFoundException;
+import com.star.logscanner.exception.LogProcessingException;
 import com.star.logscanner.service.LogProcessingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -58,8 +63,8 @@ public class LogController {
 
         try {
             String jobId = UUID.randomUUID().toString();
-
-            logProcessingService.processLogFileAsync(jobId, logfile, timestampFormat);
+            Path temporaryFile = logProcessingService.saveTemporaryFile(logfile);
+            logProcessingService.processLogFileAsync(jobId, logfile, temporaryFile, timestampFormat);
 
             UploadResponse uploadResponse = new UploadResponse(
                     jobId,
@@ -113,7 +118,6 @@ public class LogController {
             throw new JobNotFoundException(jobId);
         }
 
-        // Check if job is completed
         JobStatus status = logProcessingService.getJobStatus(jobId);
         if (status != null && status.getStatus() != JobStatusEnum.COMPLETED) {
             throw new LogProcessingException(
