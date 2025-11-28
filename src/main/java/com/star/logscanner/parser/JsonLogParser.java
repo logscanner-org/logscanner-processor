@@ -1,5 +1,6 @@
 package com.star.logscanner.parser;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.star.logscanner.entity.LogEntry;
@@ -16,6 +17,29 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Parser for JSON and NDJSON (newline-delimited JSON) log formats.
+ * 
+ * <p>Features:
+ * <ul>
+ *   <li>Supports single JSON objects and NDJSON streams</li>
+ *   <li>Automatic field mapping from common log schemas</li>
+ *   <li>Nested JSON structure handling</li>
+ *   <li>Graceful handling of malformed JSON</li>
+ *   <li>Epoch and ISO timestamp parsing</li>
+ * </ul>
+ * 
+ * <p>Supported JSON schemas:
+ * <ul>
+ *   <li>Logstash/ELK format</li>
+ *   <li>Bunyan format</li>
+ *   <li>Winston format</li>
+ *   <li>Custom formats with common field names</li>
+ * </ul>
+ * 
+ * @author LogScanner Team
+ * @version 2.0
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -59,14 +83,41 @@ public class JsonLogParser implements LogParser {
         "environment", "env", "stage", "deployment"
     };
     
+    // ========== LogParser Implementation ==========
+    
     @Override
-    public LogEntry parseLine(String line, long lineNumber, String timestampFormat) {
-        if (!isJson(line)) {
-            return null;
+    public boolean canParse(String fileName, String contentSample) {
+        if (fileName != null) {
+            String lower = fileName.toLowerCase();
+            if (lower.endsWith(".json") || lower.endsWith(".ndjson")) {
+                return true;
+            }
+        }
+        
+        if (contentSample != null) {
+            return isJson(contentSample.trim());
+        }
+        
+        return false;
+    }
+    
+    @Override
+    public ParseResult parseLine(String line, long lineNumber, ParseContext context) {
+        if (line == null) {
+            return ParseResult.skipped(lineNumber, "Null line");
+        }
+        
+        String trimmed = line.trim();
+        if (trimmed.isEmpty()) {
+            return ParseResult.skipped(lineNumber, "Empty line");
+        }
+        
+        if (!isJson(trimmed)) {
+            return ParseResult.failed(lineNumber, line, "Not valid JSON");
         }
         
         try {
-            JsonNode jsonNode = objectMapper.readTree(line);
+            JsonNode jsonNode = objectMapper.readTree(trimmed);
             
             LogEntry entry = LogEntry.builder()
                     .id(UUID.randomUUID().toString())
@@ -74,6 +125,18 @@ public class JsonLogParser implements LogParser {
                     .rawLine(line)
                     .indexedAt(LocalDateTime.now())
                     .build();
+            
+            // Set job/file info from context
+            if (context != null) {
+                if (context.getJobId() != null) {
+                    entry.setJobId(context.getJobId());
+                }
+                if (context.getFileName() != null) {
+                    entry.setFileName(context.getFileName());
+                }
+            }
+            
+            String timestampFormat = context != null ? context.getTimestampFormat() : null;
             
             // Extract standard fields
             extractTimestamp(jsonNode, entry, timestampFormat);
@@ -89,12 +152,51 @@ public class JsonLogParser implements LogParser {
             // Extract all remaining fields as metadata
             extractMetadata(jsonNode, entry);
             
-            return entry;
+            return ParseResult.success(entry);
             
+        } catch (JsonProcessingException e) {
+            log.debug("Failed to parse JSON at line {}: {}", lineNumber, e.getMessage());
+            return ParseResult.failed(lineNumber, line, "JSON parse error: " + e.getMessage());
         } catch (Exception e) {
-            log.debug("Failed to parse JSON log line: {}", e.getMessage());
-            return null;
+            log.debug("Unexpected error parsing JSON at line {}: {}", lineNumber, e.getMessage());
+            return ParseResult.failed(lineNumber, line, "Unexpected error: " + e.getMessage());
         }
+    }
+    
+    @Override
+    public void reset() {
+        // JSON parser is stateless, nothing to reset
+    }
+    
+    @Override
+    public String getSupportedFormat() {
+        return "JSON";
+    }
+    
+    @Override
+    public int getPriority() {
+        return 20; // Higher priority than CSV and TEXT
+    }
+    
+    @Override
+    public boolean supportsMultiLine() {
+        return false; // Each line is a complete JSON object
+    }
+    
+    @Override
+    public String getDescription() {
+        return "JSON/NDJSON log parser with automatic schema detection";
+    }
+    
+    // ========== Legacy Method Support ==========
+    
+    /**
+     * Legacy method for backward compatibility.
+     */
+    public LogEntry parseLine(String line, long lineNumber, String timestampFormat) {
+        ParseContext context = new ParseContext(timestampFormat);
+        ParseResult result = parseLine(line, lineNumber, context);
+        return result.isSuccess() ? result.getEntry() : null;
     }
     
     private void extractTimestamp(JsonNode node, LogEntry entry, String timestampFormat) {
