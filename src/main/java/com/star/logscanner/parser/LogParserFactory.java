@@ -15,58 +15,18 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-/**
- * Factory for creating and selecting appropriate log parsers.
- * 
- * <p>Design Pattern: Factory Pattern - centralizes parser creation and selection
- * 
- * <p>The factory supports:
- * <ul>
- *   <li>Auto-detection based on file extension and content</li>
- *   <li>Parser registration and management</li>
- *   <li>Singleton and prototype scoped parsers</li>
- *   <li>Priority-based parser selection</li>
- * </ul>
- * 
- * <p>Usage:
- * <pre>{@code
- * LogParser parser = factory.getParserForFile(filePath);
- * // or
- * LogParser parser = factory.getParser("JSON");
- * }</pre>
- * 
- * @author LogScanner Team
- * @version 2.0
- */
 @Component
 @Slf4j
 public class LogParserFactory {
-    
-    /**
-     * Registered parsers, sorted by priority (highest first).
-     */
+
     private final List<LogParser> parsers;
-    
-    /**
-     * Parser cache for singleton parsers.
-     */
+
     private final Map<String, LogParser> parserCache = new ConcurrentHashMap<>();
-    
-    /**
-     * Number of sample lines to read for content detection.
-     */
+
     private static final int SAMPLE_LINES = 10;
-    
-    /**
-     * Maximum characters to read for content sampling.
-     */
+
     private static final int MAX_SAMPLE_CHARS = 4096;
-    
-    /**
-     * Constructor with automatic parser discovery via Spring DI.
-     * 
-     * @param parsers list of available parser implementations
-     */
+
     public LogParserFactory(List<LogParser> parsers) {
         // Sort parsers by priority (highest first)
         this.parsers = parsers.stream()
@@ -79,30 +39,14 @@ public class LogParserFactory {
                        .map(p -> p.getSupportedFormat() + "(" + p.getPriority() + ")")
                        .collect(Collectors.joining(", ")));
     }
-    
-    /**
-     * Get the appropriate parser for a file path.
-     * Performs content sampling for auto-detection.
-     * 
-     * @param filePath path to the log file
-     * @return appropriate LogParser
-     * @throws IllegalArgumentException if no parser can handle the file
-     */
+
     public LogParser getParserForFile(Path filePath) {
         String fileName = filePath.getFileName().toString();
         String contentSample = sampleFileContent(filePath);
         
         return getParser(fileName, contentSample);
     }
-    
-    /**
-     * Get the appropriate parser based on filename and content sample.
-     * 
-     * @param fileName the filename (for extension detection)
-     * @param contentSample sample of file content
-     * @return appropriate LogParser
-     * @throws IllegalArgumentException if no parser can handle the file
-     */
+
     public LogParser getParser(String fileName, String contentSample) {
         log.debug("Selecting parser for file: {}", fileName);
         
@@ -136,13 +80,7 @@ public class LogParserFactory {
                 "No suitable parser found for file: " + fileName + 
                 ". Available parsers: " + getAvailableFormats());
     }
-    
-    /**
-     * Get a parser by its format identifier.
-     * 
-     * @param format the format identifier (e.g., "JSON", "CSV", "TEXT")
-     * @return Optional containing the parser if found
-     */
+
     public Optional<LogParser> getParserByFormat(String format) {
         if (format == null) {
             return Optional.empty();
@@ -165,42 +103,21 @@ public class LogParserFactory {
         
         return parser;
     }
-    
-    /**
-     * Legacy method - get parser by format string.
-     * 
-     * @param format format identifier
-     * @return LogParser or null if not found
-     */
+
     public LogParser getParser(String format) {
         return getParserByFormat(format).orElse(null);
     }
-    
-    /**
-     * Get list of all available format identifiers.
-     * 
-     * @return list of supported format strings
-     */
+
     public List<String> getAvailableFormats() {
         return parsers.stream()
                 .map(LogParser::getSupportedFormat)
                 .collect(Collectors.toList());
     }
-    
-    /**
-     * Get all registered parsers.
-     * 
-     * @return unmodifiable list of parsers
-     */
+
     public List<LogParser> getAllParsers() {
         return List.copyOf(parsers);
     }
-    
-    /**
-     * Register a new parser dynamically.
-     * 
-     * @param parser the parser to register
-     */
+
     public void registerParser(LogParser parser) {
         parsers.add(parser);
         // Re-sort by priority
@@ -208,13 +125,7 @@ public class LogParserFactory {
         log.info("Registered new parser: {} with priority {}", 
                 parser.getSupportedFormat(), parser.getPriority());
     }
-    
-    /**
-     * Unregister a parser by format.
-     * 
-     * @param format the format identifier to remove
-     * @return true if parser was removed
-     */
+
     public boolean unregisterParser(String format) {
         boolean removed = parsers.removeIf(
                 p -> p.getSupportedFormat().equalsIgnoreCase(format));
@@ -226,22 +137,11 @@ public class LogParserFactory {
         
         return removed;
     }
-    
-    /**
-     * Check if a parser exists for the given format.
-     * 
-     * @param format format identifier
-     * @return true if parser is available
-     */
+
     public boolean hasParser(String format) {
         return getParserByFormat(format).isPresent();
     }
-    
-    // ========== Private Methods ==========
-    
-    /**
-     * Detect parser based on file extension.
-     */
+
     private Optional<LogParser> detectByExtension(String fileName) {
         if (fileName == null) {
             return Optional.empty();
@@ -264,10 +164,7 @@ public class LogParserFactory {
         
         return Optional.empty();
     }
-    
-    /**
-     * Sample the first few lines of a file for content detection.
-     */
+
     private String sampleFileContent(Path filePath) {
         if (filePath == null || !Files.exists(filePath)) {
             return "";
@@ -284,7 +181,7 @@ public class LogParserFactory {
                    linesRead < SAMPLE_LINES && 
                    charsRead < MAX_SAMPLE_CHARS) {
                 
-                if (sample.length() > 0) {
+                if (!sample.isEmpty()) {
                     sample.append("\n");
                 }
                 sample.append(line);
@@ -299,15 +196,7 @@ public class LogParserFactory {
         
         return sample.toString();
     }
-    
-    /**
-     * Create a parser context with default settings for the given file.
-     * 
-     * @param filePath path to the file
-     * @param jobId job identifier
-     * @param timestampFormat custom timestamp format (optional)
-     * @return configured ParseContext
-     */
+
     public ParseContext createContext(Path filePath, String jobId, String timestampFormat) {
         return ParseContext.builder()
                 .jobId(jobId)
@@ -315,12 +204,7 @@ public class LogParserFactory {
                 .timestampFormat(timestampFormat)
                 .build();
     }
-    
-    /**
-     * Get parser info for debugging/monitoring.
-     * 
-     * @return map of parser format to description
-     */
+
     public Map<String, String> getParserInfo() {
         return parsers.stream()
                 .collect(Collectors.toMap(

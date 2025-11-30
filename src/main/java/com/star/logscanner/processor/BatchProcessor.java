@@ -10,37 +10,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
-/**
- * Utility for efficient batch processing of log entries.
- * 
- * <p>Features:
- * <ul>
- *   <li>Configurable batch sizes</li>
- *   <li>Automatic flushing when batch is full</li>
- *   <li>Progress callbacks</li>
- *   <li>Partial failure handling</li>
- *   <li>Statistics tracking</li>
- * </ul>
- * 
- * <p>Usage:
- * <pre>{@code
- * BatchProcessor processor = BatchProcessor.builder()
- *     .batchSize(1000)
- *     .repository(logEntryRepository)
- *     .onBatchComplete((stats) -> updateProgress(stats))
- *     .build();
- * 
- * for (LogEntry entry : entries) {
- *     processor.add(entry);
- * }
- * processor.flush(); // Flush remaining entries
- * 
- * BatchStatistics stats = processor.getStatistics();
- * }</pre>
- * 
- * @author LogScanner Team
- * @version 2.0
- */
 @Slf4j
 public class BatchProcessor {
     
@@ -48,14 +17,7 @@ public class BatchProcessor {
     private final LogEntryRepository repository;
     private final Consumer<BatchStatistics> onBatchComplete;
     private final boolean continueOnError;
-    
     private final List<LogEntry> currentBatch;
-    /**
-     * -- GETTER --
-     *  Get batch processing statistics.
-     *
-     * @return statistics object
-     */
     @Getter
     private final BatchStatistics statistics;
     
@@ -115,12 +77,7 @@ public class BatchProcessor {
         this.currentBatch = new ArrayList<>(batchSize);
         this.statistics = new BatchStatistics();
     }
-    
-    /**
-     * Add an entry to the batch. Automatically flushes when batch is full.
-     * 
-     * @param entry the entry to add
-     */
+
     public void add(LogEntry entry) {
         if (entry == null) {
             return;
@@ -132,12 +89,7 @@ public class BatchProcessor {
             flush();
         }
     }
-    
-    /**
-     * Add multiple entries to the batch.
-     * 
-     * @param entries the entries to add
-     */
+
     public void addAll(List<LogEntry> entries) {
         if (entries == null || entries.isEmpty()) {
             return;
@@ -147,12 +99,7 @@ public class BatchProcessor {
             add(entry);
         }
     }
-    
-    /**
-     * Flush the current batch to storage.
-     * 
-     * @return number of entries successfully saved
-     */
+
     public int flush() {
         if (currentBatch.isEmpty()) {
             return 0;
@@ -187,21 +134,11 @@ public class BatchProcessor {
         
         return savedCount;
     }
-    
-    /**
-     * Get the current batch size (pending entries).
-     * 
-     * @return number of entries in current batch
-     */
+
     public int getCurrentBatchSize() {
         return currentBatch.size();
     }
-    
-    /**
-     * Check if batch is empty.
-     * 
-     * @return true if no pending entries
-     */
+
     public boolean isEmpty() {
         return currentBatch.isEmpty();
     }
@@ -254,13 +191,7 @@ public class BatchProcessor {
         private LogEntryRepository repository;
         private Consumer<BatchStatistics> onBatchComplete;
         private boolean continueOnError = true;
-        
-        /**
-         * Set the batch size.
-         * 
-         * @param batchSize entries per batch
-         * @return this builder
-         */
+
         public Builder batchSize(int batchSize) {
             if (batchSize < 1) {
                 throw new IllegalArgumentException("Batch size must be positive");
@@ -268,45 +199,22 @@ public class BatchProcessor {
             this.batchSize = batchSize;
             return this;
         }
-        
-        /**
-         * Set the repository for saving entries.
-         * 
-         * @param repository the LogEntryRepository
-         * @return this builder
-         */
+
         public Builder repository(LogEntryRepository repository) {
             this.repository = repository;
             return this;
         }
-        
-        /**
-         * Set callback for batch completion.
-         * 
-         * @param callback callback receiving statistics
-         * @return this builder
-         */
+
         public Builder onBatchComplete(Consumer<BatchStatistics> callback) {
             this.onBatchComplete = callback;
             return this;
         }
-        
-        /**
-         * Set whether to continue processing on errors.
-         * 
-         * @param continueOnError true to continue
-         * @return this builder
-         */
+
         public Builder continueOnError(boolean continueOnError) {
             this.continueOnError = continueOnError;
             return this;
         }
-        
-        /**
-         * Build the BatchProcessor.
-         * 
-         * @return new BatchProcessor instance
-         */
+
         public BatchProcessor build() {
             return new BatchProcessor(this);
         }

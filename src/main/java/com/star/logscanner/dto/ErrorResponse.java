@@ -17,6 +17,7 @@ public class ErrorResponse {
     private int status;
     private LocalDateTime timestamp;
     private List<ValidationError> validationErrors;
+    private List<ValidationError> details;
 
     public ErrorResponse(String error, String message, String path, int status) {
         this.error = error;
@@ -24,5 +25,15 @@ public class ErrorResponse {
         this.path = path;
         this.status = status;
         this.timestamp = LocalDateTime.now();
+    }
+
+    public ErrorResponse(String error, String message, String path, int status,
+                         LocalDateTime timestamp, List<ValidationError> validationErrors) {
+        this.error = error;
+        this.message = message;
+        this.path = path;
+        this.status = status;
+        this.timestamp = timestamp;
+        this.validationErrors = validationErrors;
     }
 }

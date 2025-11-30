@@ -1,5 +1,6 @@
 package com.star.logscanner.processor;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
@@ -11,42 +12,6 @@ import java.nio.file.Path;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-/**
- * Efficient file streaming processor for large log files.
- * 
- * <p>Features:
- * <ul>
- *   <li>Line-by-line streaming without loading entire file</li>
- *   <li>Configurable buffer sizes for performance tuning</li>
- *   <li>Progress callbacks for UI updates</li>
- *   <li>Support for different character encodings</li>
- *   <li>Resumption support (skip to line number)</li>
- * </ul>
- * 
- * <p>Performance targets:
- * <ul>
- *   <li>50MB+ files without OOM</li>
- *   <li>10,000+ lines/second processing</li>
- *   <li>Configurable 8KB default buffer</li>
- * </ul>
- * 
- * <p>Usage:
- * <pre>{@code
- * FileStreamProcessor processor = FileStreamProcessor.builder()
- *     .bufferSize(8192)
- *     .charset(StandardCharsets.UTF_8)
- *     .onProgress((lines, total) -> updateUI(lines, total))
- *     .build();
- * 
- * processor.processFile(path, (line, lineNumber) -> {
- *     ParseResult result = parser.parseLine(line, lineNumber, context);
- *     // handle result
- * });
- * }</pre>
- * 
- * @author LogScanner Team
- * @version 2.0
- */
 @Slf4j
 public class FileStreamProcessor {
     
@@ -59,19 +24,14 @@ public class FileStreamProcessor {
     private final Consumer<Exception> onError;
     private final int progressInterval;
     
+    @Getter
     public static class ProcessingStats {
         private long totalLines;
         private long bytesRead;
         private long processingTimeMs;
         private long startLine;
         private long endLine;
-        
-        public long getTotalLines() { return totalLines; }
-        public long getBytesRead() { return bytesRead; }
-        public long getProcessingTimeMs() { return processingTimeMs; }
-        public long getStartLine() { return startLine; }
-        public long getEndLine() { return endLine; }
-        
+
         public double getLinesPerSecond() {
             return processingTimeMs > 0 ? (totalLines * 1000.0) / processingTimeMs : 0;
         }
@@ -242,37 +202,17 @@ public class FileStreamProcessor {
             this.charset = charset != null ? charset : StandardCharsets.UTF_8;
             return this;
         }
-        
-        /**
-         * Set progress callback.
-         * Receives (currentLine, totalLines).
-         *
-         * @param onProgress progress callback
-         * @return this builder
-         */
+
         public Builder onProgress(BiConsumer<Long, Long> onProgress) {
             this.onProgress = onProgress;
             return this;
         }
-        
-        /**
-         * Set error callback.
-         * Called when a line processing throws an exception.
-         * 
-         * @param onError error callback
-         * @return this builder
-         */
+
         public Builder onError(Consumer<Exception> onError) {
             this.onError = onError;
             return this;
         }
-        
-        /**
-         * Set progress reporting interval.
-         * 
-         * @param interval report every N lines
-         * @return this builder
-         */
+
         public Builder progressInterval(int interval) {
             this.progressInterval = Math.max(1, interval);
             return this;

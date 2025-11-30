@@ -116,6 +116,32 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Failed to process log file", errorResponse));
     }
 
+    @ExceptionHandler(InvalidQueryException.class)
+    public ResponseEntity<?> handleInvalidQuery(
+            InvalidQueryException ex,
+            HttpServletRequest request) {
+
+        log.error("Invalid query: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                "INVALID_QUERY",
+                ex.getMessage(),
+                request.getRequestURI(),
+                HttpStatus.BAD_REQUEST.value()
+        );
+
+        // Add field information if available
+        if (ex.getField() != null) {
+            errorResponse.setDetails(List.of(
+                    new ValidationError(ex.getField(), ex.getMessage())
+            ));
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("Invalid query parameters", errorResponse));
+    }
+
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<?> handleMaxUploadSizeExceeded(
             MaxUploadSizeExceededException ex,
